@@ -46,20 +46,40 @@ interface Category {
 const Dashboard: React.FC = () => {
   const [foods, setFoods] = useState<Food[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<
-    number | undefined
-  >();
+  const [selectedCategory, setSelectedCategory] = useState<number | undefined>(
+    undefined,
+  );
   const [searchValue, setSearchValue] = useState('');
 
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
     // Navigate do ProductDetails page
+    navigation.navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
       // Load Foods from API
+      api
+        .get('foods', {
+          params: {
+            name_like: searchValue || undefined,
+            category_like: selectedCategory,
+          },
+        })
+        .then(response => {
+          let { data } = response;
+          data = data.map((f: Food) => {
+            const value = {
+              ...f,
+              formattedPrice: formatValue(f.price),
+            };
+
+            return value;
+          });
+          setFoods(data);
+        });
     }
 
     loadFoods();
@@ -68,6 +88,9 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     async function loadCategories(): Promise<void> {
       // Load categories from API
+      api.get('categories').then(response => {
+        setCategories(response.data);
+      });
     }
 
     loadCategories();
@@ -75,6 +98,7 @@ const Dashboard: React.FC = () => {
 
   function handleSelectCategory(id: number): void {
     // Select / deselect category
+    setSelectedCategory(state => (state === id ? undefined : id));
   }
 
   return (
